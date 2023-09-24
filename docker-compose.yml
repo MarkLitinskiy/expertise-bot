@@ -1,0 +1,39 @@
+version: "3.9"
+services:
+  postgres:
+    # сервис базы данных postgresql
+    image: postgres:14.8-alpine3.18
+    networks:
+      local_network:
+        ipv4_address: 172.18.0.2
+    environment:
+      POSTGRES_DB: "expertise_bot"
+      POSTGRES_USER: "Mike_Wazowski"
+      POSTGRES_PASSWORD: "stroim_kod"
+      DATABASE_HOST: localhost
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    volumes:
+      # монтирование sql скрипта для первоначального создания базы данных
+      - ./db_init:/docker-entrypoint-initdb.d
+      # монтирование директории для сохранения базы данных на сервере (db_data)
+      - ./db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+  telegram_bot:
+    # сервис телеграм-бота
+    build: server/
+    networks:
+      local_network:
+        ipv4_address: 172.18.0.3
+    container_name: bot
+    depends_on:
+      - postgres
+
+networks:
+  local_network:
+    # сеть для статических ip адресов сервисов для подключения бота к базе данных
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.18.0.0/16
